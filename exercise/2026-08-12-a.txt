@@ -1,0 +1,2 @@
+gh_mcp live MCP exercise campaign 2026-08-12-a
+This repository is disposable and this branch is a test fixture.
