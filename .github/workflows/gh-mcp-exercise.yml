@@ -1,0 +1,61 @@
+name: gh_mcp exercise
+
+on:
+  workflow_dispatch:
+    inputs:
+      campaign_id:
+        description: Campaign identity
+        required: true
+        type: string
+      fail:
+        description: Fail at the deterministic final step
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  exercise:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start marker
+        run: echo "GH_MCP_EXERCISE_START:${{ inputs.campaign_id }}"
+
+      - name: Generate evidence files
+        env:
+          CAMPAIGN_ID: ${{ inputs.campaign_id }}
+        run: |
+          mkdir -p exercise-output
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          campaign = os.environ["CAMPAIGN_ID"]
+          root = Path("exercise-output")
+          (root / "manifest.json").write_text(
+              json.dumps({"campaign_id": campaign, "schema": "gh-mcp-exercise-v1"}, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          (root / "long.txt").write_text(
+              "".join(f"{campaign}:line:{i:05d}:abcdefghijklmnopqrstuvwxyz0123456789\n" for i in range(5000)),
+              encoding="utf-8",
+          )
+          (root / "binary.bin").write_bytes(bytes(range(256)) * 8)
+          PY
+
+      - name: Upload campaign artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gh-mcp-exercise-${{ inputs.campaign_id }}
+          path: exercise-output/
+          if-no-files-found: error
+
+      - name: End marker
+        if: always()
+        run: echo "GH_MCP_EXERCISE_END:${{ inputs.campaign_id }}"
+
+      - name: Deterministic failure
+        if: ${{ inputs.fail }}
+        run: |
+          echo "GH_MCP_EXERCISE_FAILURE:${{ inputs.campaign_id }}"
+          exit 1
