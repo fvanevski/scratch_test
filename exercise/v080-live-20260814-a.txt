@@ -1,0 +1,2 @@
+gh_mcp 0.8.0 live exercise
+campaign=v080-live-20260814-a
